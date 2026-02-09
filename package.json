@@ -1,6 +1,6 @@
 {
   "name": "excalidecks",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Excalidraw canvas presentations and live MCP drawing server",
   "main": "dist/index.js",
   "type": "module",
@@ -18,7 +18,8 @@
     "dev:server": "npx tsc --watch",
     "production": "npm run build && npm run canvas",
     "prepublishOnly": "npm run build",
-    "type-check": "npx tsc --noEmit"
+    "type-check": "npx tsc --noEmit",
+    "bump": "node scripts/bump-version.cjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",

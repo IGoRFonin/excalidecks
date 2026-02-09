@@ -9,6 +9,7 @@ import logger from './utils/logger.js';
 import { createExpressApp } from './canvas/express-app.js';
 import { initWebSocket, closeWebSocket } from './canvas/websocket.js';
 import { registerTools } from './mcp/tools.js';
+import { SERVER_VERSION } from './version.js';
 
 // Safety: redirect console.log to logger so nothing leaks to stdout
 console.log = (...args: any[]) => logger.info(args.join(' '));
@@ -43,7 +44,7 @@ async function startMcp(): Promise<void> {
   mcpServer = new Server(
     {
       name: 'excalidecks',
-      version: '1.0.2',
+      version: SERVER_VERSION,
       description: 'Excalidraw canvas presentations and live MCP drawing server',
     },
     {

@@ -1,4 +1,7 @@
 import { defineConfig } from 'tsup';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -16,6 +19,9 @@ export default defineConfig({
       "import { createRequire } from 'module';",
       'const require = createRequire(import.meta.url);',
     ].join('\n'),
+  },
+  define: {
+    '__APP_VERSION__': JSON.stringify(pkg.version),
   },
   external: [
     // Frontend-only deps (not needed at runtime)

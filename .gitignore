@@ -14,6 +14,7 @@ public/dist/
 # Editor artifacts
 .cursor/
 .claude/
+.DS_Store
 
 # Development artifacts
 *.excalidraw

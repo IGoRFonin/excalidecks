@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import logger from '../utils/logger.js';
 import { elementStore, CreateElementSchema, UpdateElementSchema } from './element-store.js';
+import { SERVER_VERSION } from '../version.js';
 import { getClientCount, broadcastMessage } from './websocket.js';
 
 export function createExpressApp(onActivity: () => void): express.Application {
@@ -280,6 +281,7 @@ export function createExpressApp(onActivity: () => void): express.Application {
   app.get('/health', (_req: Request, res: Response) => {
     res.json({
       status: 'healthy',
+      version: SERVER_VERSION,
       timestamp: new Date().toISOString(),
       elements_count: elementStore.size,
       websocket_clients: getClientCount(),

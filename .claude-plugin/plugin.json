@@ -1,11 +1,18 @@
 {
   "name": "excalidecks",
-  "description": "Excalidraw canvas presentations and live MCP drawing server. Create beautiful vertical-scroll canvas presentations in .excalidraw format. Use when user requests: create presentation, make slides, canvas presentation, excalidraw presentation, visual slides, draw diagram, excalidraw canvas.",
-  "version": "1.0.0",
+  "description": "Excalidraw canvas presentations with live drawing server. Create beautiful vertical-scroll canvas presentations in .excalidraw format. Use when user requests: create presentation, make slides, canvas presentation, excalidraw presentation, visual slides, draw diagram, excalidraw canvas.",
+  "version": "1.1.0",
   "author": {
-    "name": "igor"
+    "name": "IGoR Fonin",
+    "email": "igorrr.fonin@gmail.com"
   },
   "license": "MIT",
-  "keywords": ["excalidraw", "presentation", "slides", "canvas", "mcp", "diagram"],
+  "keywords": [
+    "excalidraw",
+    "presentation",
+    "slides",
+    "canvas",
+    "diagram"
+  ],
   "skills": ["./skills/excalidraw-presentation"]
 }
