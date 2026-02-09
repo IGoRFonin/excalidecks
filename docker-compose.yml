@@ -5,8 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: mcp-excalidraw:latest
-    container_name: mcp-excalidraw
+    image: excalidecks:latest
+    container_name: excalidecks
     ports:
       - "41520:41520"
     environment:

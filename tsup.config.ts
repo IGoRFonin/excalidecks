@@ -9,6 +9,14 @@ export default defineConfig({
   splitting: false,
   clean: true,
   outDir: 'dist',
+  noExternal: [/.*/],
+  banner: {
+    js: [
+      '#!/usr/bin/env node',
+      "import { createRequire } from 'module';",
+      'const require = createRequire(import.meta.url);',
+    ].join('\n'),
+  },
   external: [
     // Frontend-only deps (not needed at runtime)
     '@excalidraw/excalidraw',

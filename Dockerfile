@@ -36,6 +36,6 @@ EXPOSE 41520
 
 CMD ["node", "dist/index.js"]
 
-LABEL org.opencontainers.image.source="https://github.com/yctimlin/mcp_excalidraw"
-LABEL org.opencontainers.image.description="MCP Excalidraw Server - Unified MCP + Canvas"
+LABEL org.opencontainers.image.source="https://github.com/IGoRFonin/excalidecks"
+LABEL org.opencontainers.image.description="Excalidecks - Excalidraw canvas presentations and live MCP drawing server"
 LABEL org.opencontainers.image.licenses="MIT"

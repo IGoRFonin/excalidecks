@@ -1,0 +1,25 @@
+{
+  "name": "excalidecks",
+  "id": "excalidecks",
+  "owner": {
+    "name": "igor"
+  },
+  "metadata": {
+    "description": "Excalidraw canvas presentations and live MCP drawing server",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "excalidecks",
+      "source": "./",
+      "description": "Create beautiful vertical-scroll canvas presentations in .excalidraw format with a live Excalidraw MCP server for real-time drawing.",
+      "version": "1.0.0",
+      "author": {
+        "name": "igor"
+      },
+      "keywords": ["excalidraw", "presentation", "slides", "canvas", "mcp"],
+      "category": "design",
+      "strict": false
+    }
+  ]
+}

@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 // Disable colors to prevent ANSI codes from breaking JSON parsing
 process.env.NODE_DISABLE_COLORS = '1';
 process.env.NO_COLOR = '1';
@@ -44,9 +42,9 @@ let mcpServer: Server | null = null;
 async function startMcp(): Promise<void> {
   mcpServer = new Server(
     {
-      name: 'mcp-excalidraw-server',
+      name: 'excalidecks',
       version: '1.0.2',
-      description: 'Advanced MCP server for Excalidraw with real-time canvas',
+      description: 'Excalidraw canvas presentations and live MCP drawing server',
     },
     {
       capabilities: {

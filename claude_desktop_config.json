@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "mcp_excalidraw": {
+    "excalidecks": {
       "command": "npx",
-      "args": ["-y", "excalidraw-mcp"]
+      "args": ["-y", "excalidecks"]
     }
   }
 }
