@@ -32,11 +32,11 @@ export const CreateElementSchema = z.object({
   text: z.string().optional(),
   label: z.object({ text: z.string() }).optional(),
   fontSize: z.number().optional(),
-  fontFamily: z.string().optional(),
+  fontFamily: z.number().optional(),
   groupIds: z.array(z.string()).optional(),
   locked: z.boolean().optional(),
-  points: z.array(z.object({ x: z.number(), y: z.number() })).optional(),
-});
+  points: z.array(z.tuple([z.number(), z.number()])).optional(),
+}).passthrough();
 
 export const UpdateElementSchema = z.object({
   id: z.string(),
@@ -53,10 +53,11 @@ export const UpdateElementSchema = z.object({
   text: z.string().optional(),
   label: z.object({ text: z.string() }).optional(),
   fontSize: z.number().optional(),
-  fontFamily: z.string().optional(),
+  fontFamily: z.number().optional(),
   groupIds: z.array(z.string()).optional(),
   locked: z.boolean().optional(),
-});
+  points: z.array(z.tuple([z.number(), z.number()])).optional(),
+}).passthrough();
 
 // --- Scene state (moved from index.ts:166-178) ---
 interface SceneState {
