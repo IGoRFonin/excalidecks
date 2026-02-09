@@ -26,7 +26,8 @@ interface ServerElement {
   opacity?: number;
   text?: string;
   fontSize?: number;
-  fontFamily?: string | number;
+  fontFamily?: number;
+  points?: [number, number][];
   label?: {
     text: string;
   };

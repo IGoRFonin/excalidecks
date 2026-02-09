@@ -132,10 +132,24 @@ export interface ServerElement extends Omit<ExcalidrawElementBase, 'id'> {
   syncTimestamp?: string;
   text?: string;
   fontSize?: number;
-  fontFamily?: string | number;
+  fontFamily?: number;
   label?: {
     text: string;
   };
+  points?: readonly [number, number][];
+  textAlign?: string;
+  verticalAlign?: string;
+  lineHeight?: number;
+  originalText?: string;
+  autoResize?: boolean;
+  startBinding?: ExcalidrawBinding | null;
+  endBinding?: ExcalidrawBinding | null;
+  startArrowhead?: string | null;
+  endArrowhead?: string | null;
+  lastCommittedPoint?: readonly [number, number] | null;
+  pressures?: readonly number[];
+  simulatePressure?: boolean;
+  [key: string]: any;
 }
 
 // API Response types
