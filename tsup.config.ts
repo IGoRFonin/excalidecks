@@ -9,11 +9,10 @@ export default defineConfig({
   splitting: false,
   clean: true,
   outDir: 'dist',
-  noExternal: [/.*/],
   external: [
+    // Frontend-only deps (not needed at runtime)
     '@excalidraw/excalidraw',
     '@excalidraw/mermaid-to-excalidraw',
     'react', 'react-dom', 'mermaid',
   ],
-  banner: { js: '#!/usr/bin/env node' },
 });
