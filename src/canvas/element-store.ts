@@ -220,6 +220,36 @@ class ElementStore {
     return created;
   }
 
+  batchUpdate(updates: z.infer<typeof UpdateElementSchema>[]): ServerElement[] {
+    const updated: ServerElement[] = [];
+
+    for (const data of updates) {
+      const { id, ...fields } = data;
+      const element = this.update(id, fields);
+      updated.push(element);
+    }
+
+    return updated;
+  }
+
+  batchDelete(ids: string[]): { deleted: string[]; notFound: string[] } {
+    const deleted: string[] = [];
+    const notFound: string[] = [];
+
+    for (const id of ids) {
+      if (this.elements.has(id)) {
+        this.elements.delete(id);
+        const message: ElementDeletedMessage = { type: 'element_deleted', elementId: id };
+        this.notify(message);
+        deleted.push(id);
+      } else {
+        notFound.push(id);
+      }
+    }
+
+    return { deleted, notFound };
+  }
+
   // --- Sync (overwrite all) ---
   sync(frontendElements: any[], timestamp?: string): { count: number; beforeCount: number } {
     const beforeCount = this.elements.size;
