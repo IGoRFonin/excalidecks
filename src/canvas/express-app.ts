@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import logger from '../utils/logger.js';
-import { elementStore, CreateElementSchema } from './element-store.js';
+import { elementStore, CreateElementSchema, UpdateElementSchema } from './element-store.js';
 import { getClientCount, broadcastMessage } from './websocket.js';
 
 export function createExpressApp(onActivity: () => void): express.Application {
@@ -137,6 +137,24 @@ export function createExpressApp(onActivity: () => void): express.Application {
     }
   });
 
+  // Load a full Excalidraw scene (clear + batch create)
+  app.post('/api/load', (req: Request, res: Response) => {
+    try {
+      const { elements: elementsToLoad } = req.body;
+      if (!Array.isArray(elementsToLoad)) {
+        return res.status(400).json({ success: false, error: 'Expected elements array' });
+      }
+      elementStore.clear();
+      const validated = elementsToLoad.map(el => CreateElementSchema.parse(el));
+      const created = elementStore.batchCreate(validated);
+      logger.info(`Loaded scene: ${created.length} elements`);
+      res.json({ success: true, count: created.length, elements: created });
+    } catch (error) {
+      logger.error('Error loading scene:', error);
+      res.status(400).json({ success: false, error: (error as Error).message });
+    }
+  });
+
   // Create new element
   app.post('/api/elements', (req: Request, res: Response) => {
     try {
@@ -146,6 +164,22 @@ export function createExpressApp(onActivity: () => void): express.Application {
       res.json({ success: true, element });
     } catch (error) {
       logger.error('Error creating element:', error);
+      res.status(400).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  // Batch update elements (must be before /:id route)
+  app.put('/api/elements/batch', (req: Request, res: Response) => {
+    try {
+      const { elements: elementsToUpdate } = req.body;
+      if (!Array.isArray(elementsToUpdate)) {
+        return res.status(400).json({ success: false, error: 'Expected an array of elements with id fields' });
+      }
+      const validated = elementsToUpdate.map(el => UpdateElementSchema.parse(el));
+      const updated = elementStore.batchUpdate(validated);
+      res.json({ success: true, elements: updated, count: updated.length });
+    } catch (error) {
+      logger.error('Error batch updating elements:', error);
       res.status(400).json({ success: false, error: (error as Error).message });
     }
   });
@@ -182,6 +216,33 @@ export function createExpressApp(onActivity: () => void): express.Application {
         return res.status(404).json({ success: false, error: (error as Error).message });
       }
       logger.error('Error updating element:', error);
+      res.status(400).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  // Delete all elements (clear canvas)
+  app.delete('/api/elements', (_req: Request, res: Response) => {
+    try {
+      const count = elementStore.size;
+      elementStore.clear();
+      res.json({ success: true, message: `Cleared ${count} elements` });
+    } catch (error) {
+      logger.error('Error clearing elements:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  // Batch delete elements (must be before /:id route)
+  app.delete('/api/elements/batch', (req: Request, res: Response) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ success: false, error: 'Expected ids array' });
+      }
+      const result = elementStore.batchDelete(ids);
+      res.json({ success: true, ...result });
+    } catch (error) {
+      logger.error('Error batch deleting elements:', error);
       res.status(400).json({ success: false, error: (error as Error).message });
     }
   });
