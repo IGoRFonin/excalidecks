@@ -138,14 +138,20 @@ class ExcalidrawPresentation {
     );
   }
 
+  _isCyrillic(char) {
+    const cp = char.codePointAt(0);
+    return (cp >= 0x0400 && cp <= 0x04FF);
+  }
+
   _textWidth(text, fontSize, fontFamily = 6) {
     const lines = text.split("\n");
     // Font width multipliers (measured from browser canvas.measureText):
     // fontFamily 5 (Excalifont): hand-drawn, widest -> 0.85
-    // fontFamily 6 (Nunito): normal sans-serif -> 0.62
-    // fontFamily 7 (Lilita One): bold display -> 0.65
+    // fontFamily 6 (Nunito): normal sans-serif -> 0.62 (latin), 0.72 (cyrillic)
+    // fontFamily 7 (Lilita One): bold display -> 0.65 (latin), 0.75 (cyrillic)
     // fontFamily 8 (Comic Shanns): code/mono -> 0.68
     // Emoji: exactly 1.0x fontSize (confirmed via browser measurement)
+    // Cyrillic letters are ~15-18% wider on average (fewer narrow chars like i/l/t)
     const mult =
       fontFamily === 5
         ? 0.85
@@ -154,11 +160,18 @@ class ExcalidrawPresentation {
         : fontFamily === 7
         ? 0.65
         : 0.62;
+    const cyrMult =
+      fontFamily === 6
+        ? 0.72
+        : fontFamily === 7
+        ? 0.75
+        : mult;
 
     const lineWidths = lines.map((l) => {
       let w = 0;
       for (const ch of l) {
-        w += this._isEmoji(ch) ? 0 : fontSize * mult;
+        if (this._isEmoji(ch)) continue;
+        w += fontSize * (this._isCyrillic(ch) ? cyrMult : mult);
       }
       return w;
     });
@@ -170,6 +183,30 @@ class ExcalidrawPresentation {
     const lines = text.split("\n");
     // All lines use lineHeight 1.25 (Excalidraw applies lineHeight uniformly)
     return lines.length * fontSize * 1.25;
+  }
+
+  _wrapText(text, maxWidth, fontSize, fontFamily = 6) {
+    const inputLines = text.split("\n");
+    const result = [];
+    for (const line of inputLines) {
+      const words = line.split(" ");
+      if (words.length === 0) {
+        result.push("");
+        continue;
+      }
+      let current = words[0];
+      for (let i = 1; i < words.length; i++) {
+        const test = current + " " + words[i];
+        if (this._textWidth(test, fontSize, fontFamily) <= maxWidth) {
+          current = test;
+        } else {
+          result.push(current);
+          current = words[i];
+        }
+      }
+      result.push(current);
+    }
+    return result.join("\n");
   }
 
   // ── Centering helpers ───────────────────────────────────────
@@ -419,7 +456,7 @@ class ExcalidrawPresentation {
     badges = null
   ) {
     const c = COLORS[color];
-    const bannerH = 90;
+    let bannerH = 90;
     const x = this.CONTENT_X;
 
     // Banner background
@@ -452,21 +489,31 @@ class ExcalidrawPresentation {
       );
     }
 
-    // Title (Excalifont hand-drawn font)
+    // Title (Excalifont hand-drawn font, wrapped)
+    const bannerTitleMaxW = bannerW - 95 - 20;
+    title = this._wrapText(title, bannerTitleMaxW, 36, 5);
+    const titleH = this._textHeight(title, 36);
     this.text(`${id}-title`, x + 95, y + 15, title, 36, 5, "#ffffff");
 
-    // Subtitle
+    // Subtitle (dynamic Y based on title height)
+    const subtitleY = y + titleH + 10;
     if (subtitle) {
       this.text(
         `${id}-subtitle`,
         x + 95,
-        y + 55,
+        subtitleY,
         subtitle,
         20,
         6,
         c.light || "#f3d9fa"
       );
     }
+
+    // Update banner height if title/subtitle overflow
+    const subtitleH = subtitle ? this._textHeight(subtitle, 20) : 0;
+    bannerH = Math.max(90, titleH + 10 + (subtitle ? subtitleH + 10 : 15));
+    const bannerBg = this.elements.find((el) => el.id === `${id}-bg`);
+    if (bannerBg) bannerBg.height = bannerH;
 
     // Badges on the right
     if (badges) {
@@ -511,6 +558,8 @@ class ExcalidrawPresentation {
       c.accent,
       c.stroke
     );
+    const sectionMaxW = this.CONTENT_WIDTH - 80;
+    title = this._wrapText(title, sectionMaxW, 35, 7);
     this.text(
       `${id}-text`,
       this.CONTENT_X + 40,
@@ -520,7 +569,11 @@ class ExcalidrawPresentation {
       7,
       "#ffffff"
     );
-    return y + 70 + 20;
+    const sectionH = Math.max(70, this._textHeight(title, 35) + 28);
+    // Update bg rect height if it grew
+    const sectionBg = this.elements.find((el) => el.id === `${id}-bg`);
+    if (sectionBg) sectionBg.height = sectionH;
+    return y + sectionH + 20;
   }
 
   blockNumber(id, y, number, label, duration = null, color = "blue") {
@@ -592,22 +645,26 @@ class ExcalidrawPresentation {
       );
     }
 
-    // Title
-    this.text(`${id}-title`, x + 20, y + 50, title, 21, 6, "#1e1e1e");
+    // Title (wrapped)
+    const availableW = w - 40;
+    const wrappedTitle = this._wrapText(title, availableW, 21, 6);
+    const titleEl = this.text(`${id}-title`, x + 20, y + 50, wrappedTitle, 21, 6, "#1e1e1e");
 
-    // Body text
+    // Body text (wrapped)
+    const bodyY = y + 50 + titleEl.height + 10;
+    const wrappedBody = this._wrapText(body, availableW, 16, 6);
     const bodyEl = this.text(
       `${id}-body-text`,
       x + 20,
-      y + 82,
-      body,
+      bodyY,
+      wrappedBody,
       16,
       6,
       "#495057"
     );
 
     // Auto-grow card height if body text overflows
-    const minH = 82 + bodyEl.height + 20;
+    const minH = (bodyY - y) + bodyEl.height + 20;
     if (h < minH) {
       const cardBody = this.elements.find((el) => el.id === `${id}-body`);
       if (cardBody) cardBody.height = minH;
@@ -621,19 +678,23 @@ class ExcalidrawPresentation {
   }
 
   nCards(id, y, cards, height = 200, gap = 20, padding = 0) {
-    const n = cards.length;
     const available = this.CONTENT_WIDTH - 2 * padding;
-    const cardW = (available - (n - 1) * gap) / n;
+    const maxPerRow = 2;
+    const cols = Math.min(cards.length, maxPerRow);
+    const cardW = (available - (cols - 1) * gap) / cols;
     const startX = this.CONTENT_X + padding;
 
     let bottomY = y;
     for (let i = 0; i < cards.length; i++) {
+      const row = Math.floor(i / maxPerRow);
+      const col = i % maxPerRow;
       const card = cards[i];
-      const x = startX + i * (cardW + gap);
+      const x = startX + col * (cardW + gap);
+      const rowY = row === 0 ? y : bottomY;
       const cardBottom = this.contentCard(
         `${id}-card-${i}`,
         x,
-        y,
+        rowY,
         cardW,
         height,
         card.title || "",
@@ -642,7 +703,16 @@ class ExcalidrawPresentation {
         card.tag || null,
         true
       );
-      bottomY = Math.max(bottomY, cardBottom);
+      if (col === maxPerRow - 1 || i === cards.length - 1) {
+        // End of row — find max bottom across this row's cards
+        const rowStart = row * maxPerRow;
+        let rowBottom = rowY;
+        for (let j = rowStart; j <= i; j++) {
+          const el = this.elements.find((e) => e.id === `${id}-card-${j}-body`);
+          if (el) rowBottom = Math.max(rowBottom, el.y + el.height + 20);
+        }
+        bottomY = rowBottom;
+      }
     }
     return bottomY;
   }
@@ -685,9 +755,30 @@ class ExcalidrawPresentation {
     positiveItems,
     height = null
   ) {
-    const itemsCount = Math.max(negativeItems.length, positiveItems.length);
+    const negAvailW = this.CARD_LEFT_W - 40;
+    const posAvailW = this.CARD_RIGHT_W - 40;
+
+    // Wrap items and compute dynamic heights per column
+    let negY = y + 50;
+    const negWrapped = [];
+    for (let i = 0; i < negativeItems.length; i++) {
+      const wrapped = this._wrapText(`\u274C ${negativeItems[i]}`, negAvailW, 16, 6);
+      negWrapped.push({ text: wrapped, y: negY });
+      negY += this._textHeight(wrapped, 16) + 10;
+    }
+    const negTotalH = negY - y + 10;
+
+    let posY = y + 50;
+    const posWrapped = [];
+    for (let i = 0; i < positiveItems.length; i++) {
+      const wrapped = this._wrapText(`\u2705 ${positiveItems[i]}`, posAvailW, 16, 6);
+      posWrapped.push({ text: wrapped, y: posY });
+      posY += this._textHeight(wrapped, 16) + 10;
+    }
+    const posTotalH = posY - y + 10;
+
     if (height === null) {
-      height = 50 + itemsCount * 35 + 20;
+      height = Math.max(negTotalH, posTotalH);
     }
 
     // Negative side
@@ -719,12 +810,12 @@ class ExcalidrawPresentation {
       6,
       "#ffffff"
     );
-    for (let i = 0; i < negativeItems.length; i++) {
+    for (let i = 0; i < negWrapped.length; i++) {
       this.text(
         `${id}-neg-item-${i}`,
         this.CARD_LEFT_X + 20,
-        y + 50 + i * 35,
-        `\u274C ${negativeItems[i]}`,
+        negWrapped[i].y,
+        negWrapped[i].text,
         16,
         6,
         "#495057"
@@ -760,12 +851,12 @@ class ExcalidrawPresentation {
       6,
       "#ffffff"
     );
-    for (let i = 0; i < positiveItems.length; i++) {
+    for (let i = 0; i < posWrapped.length; i++) {
       this.text(
         `${id}-pos-item-${i}`,
         this.CARD_RIGHT_X + 20,
-        y + 50 + i * 35,
-        `\u2705 ${positiveItems[i]}`,
+        posWrapped[i].y,
+        posWrapped[i].text,
         16,
         6,
         "#495057"
@@ -777,6 +868,8 @@ class ExcalidrawPresentation {
 
   tipBox(id, y, text, emoji = "\uD83D\uDCA1", color = "yellow") {
     const c = COLORS[color];
+    const tipTextMaxW = this.CONTENT_WIDTH - 55 - 15;
+    text = this._wrapText(text, tipTextMaxW, 17, 6);
     const textH = this._textHeight(text, 17);
     const boxH = Math.max(textH + 30, 60);
 
@@ -918,170 +1011,3 @@ class ExcalidrawPresentation {
 }
 
 module.exports = { ExcalidrawPresentation, COLORS };
-
-// ── Demo ──────────────────────────────────────────────────────
-if (require.main === module) {
-  (async () => {
-    const p = new ExcalidrawPresentation();
-    let y = 0;
-
-    // ═══════════════════════════════════════════════════════════
-    // SLIDE 1: Title
-    // ═══════════════════════════════════════════════════════════
-    let slide1H = 800;
-    p.slideBackground("s1-bg", y, slide1H);
-
-    let yPos = y + 30;
-    yPos = p.titleBanner(
-      "s1-header",
-      yPos,
-      "DEMO \u041F\u0420\u0415\u0417\u0415\u041D\u0422\u0410\u0426\u0418\u042F",
-      "\u041F\u0440\u0438\u043C\u0435\u0440 canvas-\u043F\u0440\u0435\u0437\u0435\u043D\u0442\u0430\u0446\u0438\u0438",
-      "purple",
-      "\uD83C\uDFAF",
-      [
-        ["\u0414\u0415\u041C\u041E", "blue"],
-        ["5 \u043C\u0438\u043D", "green"],
-      ]
-    );
-
-    yPos = p.sectionHeader(
-      "s1-section",
-      yPos,
-      "\u0427\u0422\u041E \u0422\u042B \u0423\u0412\u0418\u0414\u0418\u0428\u042C \u0412 \u042D\u0422\u041E\u0419 \u0414\u0415\u041C\u041E",
-      "blue"
-    );
-
-    yPos = p.twoCards(
-      "s1-cards",
-      yPos,
-      "\uD83D\uDCE6 \u041A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u044B",
-      "\u0413\u043E\u0442\u043E\u0432\u044B\u0435 \u0432\u0438\u0437\u0443\u0430\u043B\u044C\u043D\u044B\u0435 \u0431\u043B\u043E\u043A\u0438:\n\u2022 \u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 \u0438 \u0431\u0430\u043D\u043D\u0435\u0440\u044B\n\u2022 \u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043A\u043E\u043D\u0442\u0435\u043D\u0442\u0430\n\u2022 \u0421\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F\n\u2022 \u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438",
-      "\uD83C\uDFA8 \u0421\u0442\u0438\u043B\u0438\u0437\u0430\u0446\u0438\u044F",
-      "\u041F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0434\u0438\u0437\u0430\u0439\u043D:\n\u2022 9 \u0446\u0432\u0435\u0442\u043E\u0432\u044B\u0445 \u0442\u0435\u043C\n\u2022 \u0422\u0435\u043D\u0438 \u0438 \u0433\u043B\u0443\u0431\u0438\u043D\u0430\n\u2022 \u0422\u0438\u043F\u043E\u0433\u0440\u0430\u0444\u0438\u043A\u0430\n\u2022 \u0421\u043A\u0435\u0442\u0447-\u0441\u0442\u0438\u043B\u044C",
-      "orange",
-      "purple",
-      "LEGO",
-      "\u0414\u0418\u0417\u0410\u0419\u041D",
-      220
-    );
-
-    yPos = p.tipBox(
-      "s1-tip",
-      yPos,
-      "\u042D\u0442\u043E \u0432\u0441\u0451 \u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u0442\u0441\u044F Node.js-\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u043C \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438!"
-    );
-
-    slide1H = yPos - y + 30;
-
-    // ═══════════════════════════════════════════════════════════
-    // SLIDE 2: Content
-    // ═══════════════════════════════════════════════════════════
-    y = yPos + p.GAP_BETWEEN_SLIDES;
-    const slide2Start = y;
-    p.slideBackground("s2-bg", y, 100);
-
-    yPos = y + 30;
-    yPos = p.blockNumber(
-      "s2-block",
-      yPos,
-      1,
-      "\u0421\u0420\u0410\u0412\u041D\u0415\u041D\u0418\u0415 \u041F\u041E\u0414\u0425\u041E\u0414\u041E\u0412",
-      "3 \u043C\u0438\u043D",
-      "blue"
-    );
-
-    yPos += 20;
-    yPos = p.sectionHeader(
-      "s2-section",
-      yPos,
-      "\uD83D\uDD27 \u0420\u0423\u0427\u041D\u041E\u0419 \u041A\u041E\u0414 vs \u0412\u0410\u0419\u0411\u041A\u041E\u0414\u0418\u041D\u0413",
-      "green"
-    );
-
-    yPos = p.comparison(
-      "s2-compare",
-      yPos,
-      "\u0420\u0423\u0427\u041D\u041E\u0419 \u041A\u041E\u0414",
-      [
-        "\u0427\u0430\u0441\u044B \u043D\u0430 \u0431\u043E\u0439\u043B\u0435\u0440\u043F\u043B\u0435\u0439\u0442",
-        "\u0417\u0430\u0431\u044B\u0442\u044B\u0435 edge cases",
-        "\u0423\u0441\u0442\u0430\u0440\u0435\u0432\u0448\u0438\u0435 \u043F\u0430\u0442\u0442\u0435\u0440\u043D\u044B",
-      ],
-      "\u0412\u0410\u0419\u0411\u041A\u041E\u0414\u0418\u041D\u0413",
-      [
-        "\u0424\u043E\u043A\u0443\u0441 \u043D\u0430 \u043B\u043E\u0433\u0438\u043A\u0435",
-        "AI \u043F\u043E\u043A\u0440\u044B\u0432\u0430\u0435\u0442 edge cases",
-        "\u0410\u043A\u0442\u0443\u0430\u043B\u044C\u043D\u044B\u0435 best practices",
-      ]
-    );
-
-    yPos = p.tipBox(
-      "s2-tip",
-      yPos,
-      "\u0412\u0430\u0439\u0431\u043A\u043E\u0434\u0438\u043D\u0433 \u2014 \u044D\u0442\u043E \u043D\u0435 \u0437\u0430\u043C\u0435\u043D\u0430 \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0441\u0442\u0430.\n\u042D\u0442\u043E \u0443\u0441\u0438\u043B\u0438\u0442\u0435\u043B\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0435\u0439.",
-      "\uD83E\uDDE0"
-    );
-
-    yPos = p.separatorLine("s2-sep", yPos, "#be4bdb");
-
-    yPos += 10;
-    yPos = p.bulletList(
-      "s2-list",
-      p.CONTENT_X + 60,
-      yPos,
-      [
-        "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 AI \u043A\u0430\u043A \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430, \u0430 \u043D\u0435 \u0437\u0430\u043C\u0435\u043D\u0443",
-        "\u041F\u043E\u043D\u0438\u043C\u0430\u0439 \u0447\u0442\u043E \u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u0442\u0441\u044F \u2014 \u043D\u0435 \u043A\u043E\u043F\u0438\u0440\u0443\u0439 \u0441\u043B\u0435\u043F\u043E",
-        "\u0421\u0442\u0440\u043E\u0439 \u0441\u0432\u043E\u044E \u0431\u0438\u0431\u043B\u0438\u043E\u0442\u0435\u043A\u0443 \u043F\u0440\u043E\u043C\u043F\u0442\u043E\u0432 \u0438 \u0441\u043A\u0438\u043B\u043E\u0432",
-      ],
-      "#495057",
-      16,
-      "purple"
-    );
-
-    p.progressDots("s2-dots", p.CONTENT_X + 350, yPos, 5, 2);
-    yPos += 30;
-
-    const slide2H = yPos - slide2Start + 30;
-
-    // ═══════════════════════════════════════════════════════════
-    // SLIDE 3: Closing
-    // ═══════════════════════════════════════════════════════════
-    y = yPos + p.GAP_BETWEEN_SLIDES;
-    const slide3Start = y;
-    let slide3H = 400;
-    p.slideBackground("s3-bg", y, slide3H);
-
-    yPos = y + 30;
-    yPos = p.titleBanner(
-      "s3-header",
-      yPos,
-      "\u0421\u041F\u0410\u0421\u0418\u0411\u041E!",
-      "\u041F\u043E\u0434\u043F\u0438\u0441\u044B\u0432\u0430\u0439\u0441\u044F \u043D\u0430 \u043A\u0430\u043D\u0430\u043B",
-      "green",
-      "\uD83D\uDD25",
-      [["\u041A\u041E\u041D\u0415\u0426", "red"]]
-    );
-
-    yPos = p.tipBox(
-      "s3-cta",
-      yPos,
-      "\u0421\u0442\u0430\u0432\u044C \u043B\u0430\u0439\u043A, \u043F\u043E\u0434\u043F\u0438\u0441\u044B\u0432\u0430\u0439\u0441\u044F, \u0436\u043C\u0438 \u043A\u043E\u043B\u043E\u043A\u043E\u043B\u044C\u0447\u0438\u043A! \uD83D\uDD14",
-      "\uD83D\uDE80",
-      "cyan"
-    );
-
-    slide3H = yPos - slide3Start + 30;
-
-    // ── Fix slide background heights ────────────────────────────
-    for (const el of p.elements) {
-      if (el.id === "s1-bg") el.height = slide1H;
-      else if (el.id === "s2-bg") el.height = slide2H;
-      else if (el.id === "s3-bg") el.height = slide3H;
-    }
-
-    // ── Push to live server ─────────────────────────────────────
-    await p.push();
-  })();
-}

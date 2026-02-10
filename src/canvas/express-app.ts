@@ -14,7 +14,7 @@ export function createExpressApp(onActivity: () => void): express.Application {
 
   // Middleware
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '20mb' }));
 
   // Activity tracking middleware
   app.use((req: Request, _res: Response, next: NextFunction) => {

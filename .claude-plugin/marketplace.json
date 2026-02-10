@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Excalidraw canvas presentations with live drawing server",
-    "version": "1.1.1"
+    "version": "1.1.2"
   },
   "plugins": [
     {
       "name": "excalidecks",
       "source": "./",
       "description": "Create beautiful vertical-scroll canvas presentations in .excalidraw format with a live Excalidraw server for real-time drawing.",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "author": {
         "name": "IGoR Fonin",
         "email": "igorrr.fonin@gmail.com"
