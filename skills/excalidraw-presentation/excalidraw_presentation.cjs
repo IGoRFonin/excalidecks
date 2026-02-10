@@ -5,19 +5,73 @@
  * matching the style of Igor's vibecoding presentation.
  */
 
-const fs = require('fs');
+const fs = require("fs");
 
 // ─── Color Palette ──────────────────────────────────────────────
 const COLORS = {
-  blue:    { bg: "#e7f5ff", stroke: "#1971c2", fill: "#228be6", accent: "#339af0", light: "#d0ebff" },
-  green:   { bg: "#ebfbee", stroke: "#2f9e44", fill: "#40c057", accent: "#51cf66", light: "#d3f9d8" },
-  orange:  { bg: "#fff4e6", stroke: "#e67700", fill: "#ffd43b", accent: "#ff922b", light: "#fff9db" },
-  yellow:  { bg: "#fff9db", stroke: "#f59f00", fill: "#ffd43b", accent: "#fcc419", light: "#fff3bf" },
-  red:     { bg: "#fff5f5", stroke: "#c92a2a", fill: "#fa5252", accent: "#ff6b6b", light: "#ffe3e3" },
-  purple:  { bg: "#f8f0fc", stroke: "#9c36b5", fill: "#be4bdb", accent: "#9c36b5", light: "#f3d9fa" },
-  violet:  { bg: "#f3f0ff", stroke: "#5f3dc4", fill: "#7950f2", accent: "#6741d9", light: "#e5dbff" },
-  cyan:    { bg: "#e3fafc", stroke: "#0b7285", fill: "#15aabf", accent: "#22b8cf", light: "#c5f6fa" },
-  neutral: { bg: "#f8f9fa", stroke: "#ced4da", fill: "#495057", accent: "#868e96", light: "#e9ecef" },
+  blue: {
+    bg: "#e7f5ff",
+    stroke: "#1971c2",
+    fill: "#228be6",
+    accent: "#339af0",
+    light: "#d0ebff",
+  },
+  green: {
+    bg: "#ebfbee",
+    stroke: "#2f9e44",
+    fill: "#40c057",
+    accent: "#51cf66",
+    light: "#d3f9d8",
+  },
+  orange: {
+    bg: "#fff4e6",
+    stroke: "#e67700",
+    fill: "#ffd43b",
+    accent: "#ff922b",
+    light: "#fff9db",
+  },
+  yellow: {
+    bg: "#fff9db",
+    stroke: "#f59f00",
+    fill: "#ffd43b",
+    accent: "#fcc419",
+    light: "#fff3bf",
+  },
+  red: {
+    bg: "#fff5f5",
+    stroke: "#c92a2a",
+    fill: "#fa5252",
+    accent: "#ff6b6b",
+    light: "#ffe3e3",
+  },
+  purple: {
+    bg: "#f8f0fc",
+    stroke: "#9c36b5",
+    fill: "#be4bdb",
+    accent: "#9c36b5",
+    light: "#f3d9fa",
+  },
+  violet: {
+    bg: "#f3f0ff",
+    stroke: "#5f3dc4",
+    fill: "#7950f2",
+    accent: "#6741d9",
+    light: "#e5dbff",
+  },
+  cyan: {
+    bg: "#e3fafc",
+    stroke: "#0b7285",
+    fill: "#15aabf",
+    accent: "#22b8cf",
+    light: "#c5f6fa",
+  },
+  neutral: {
+    bg: "#f8f9fa",
+    stroke: "#ced4da",
+    fill: "#495057",
+    accent: "#868e96",
+    light: "#e9ecef",
+  },
 };
 
 // ─── Base element factory ───────────────────────────────────────
@@ -33,15 +87,33 @@ class ExcalidrawPresentation {
   static GAP_BETWEEN_SLIDES = 120;
 
   // Instance accessors for convenience (so `this.SLIDE_X` works)
-  get SLIDE_WIDTH() { return ExcalidrawPresentation.SLIDE_WIDTH; }
-  get SLIDE_X() { return ExcalidrawPresentation.SLIDE_X; }
-  get CONTENT_X() { return ExcalidrawPresentation.CONTENT_X; }
-  get CONTENT_WIDTH() { return ExcalidrawPresentation.CONTENT_WIDTH; }
-  get CARD_LEFT_X() { return ExcalidrawPresentation.CARD_LEFT_X; }
-  get CARD_LEFT_W() { return ExcalidrawPresentation.CARD_LEFT_W; }
-  get CARD_RIGHT_X() { return ExcalidrawPresentation.CARD_RIGHT_X; }
-  get CARD_RIGHT_W() { return ExcalidrawPresentation.CARD_RIGHT_W; }
-  get GAP_BETWEEN_SLIDES() { return ExcalidrawPresentation.GAP_BETWEEN_SLIDES; }
+  get SLIDE_WIDTH() {
+    return ExcalidrawPresentation.SLIDE_WIDTH;
+  }
+  get SLIDE_X() {
+    return ExcalidrawPresentation.SLIDE_X;
+  }
+  get CONTENT_X() {
+    return ExcalidrawPresentation.CONTENT_X;
+  }
+  get CONTENT_WIDTH() {
+    return ExcalidrawPresentation.CONTENT_WIDTH;
+  }
+  get CARD_LEFT_X() {
+    return ExcalidrawPresentation.CARD_LEFT_X;
+  }
+  get CARD_LEFT_W() {
+    return ExcalidrawPresentation.CARD_LEFT_W;
+  }
+  get CARD_RIGHT_X() {
+    return ExcalidrawPresentation.CARD_RIGHT_X;
+  }
+  get CARD_RIGHT_W() {
+    return ExcalidrawPresentation.CARD_RIGHT_W;
+  }
+  get GAP_BETWEEN_SLIDES() {
+    return ExcalidrawPresentation.GAP_BETWEEN_SLIDES;
+  }
 
   constructor() {
     this.elements = [];
@@ -55,22 +127,48 @@ class ExcalidrawPresentation {
     return this._seed;
   }
 
+  _isEmoji(char) {
+    const cp = char.codePointAt(0);
+    // Common emoji ranges: Misc Symbols, Dingbats, Emoticons, Transport, Supplemental, etc.
+    return (
+      (cp >= 0x1f300 && cp <= 0x1faff) ||
+      (cp >= 0x2600 && cp <= 0x27bf) ||
+      (cp >= 0xfe00 && cp <= 0xfe0f) ||
+      (cp >= 0x2300 && cp <= 0x23ff)
+    );
+  }
+
   _textWidth(text, fontSize, fontFamily = 6) {
-    const lines = text.split('\n');
-    const maxLen = Math.max(...lines.map(l => l.length));
-    // Font width multipliers (measured from Excalidraw rendering of Cyrillic):
+    const lines = text.split("\n");
+    // Font width multipliers (measured from browser canvas.measureText):
     // fontFamily 5 (Excalifont): hand-drawn, widest -> 0.85
     // fontFamily 6 (Nunito): normal sans-serif -> 0.62
     // fontFamily 7 (Lilita One): bold display -> 0.65
     // fontFamily 8 (Comic Shanns): code/mono -> 0.68
-    if (fontFamily === 5) return maxLen * fontSize * 0.85;
-    if (fontFamily === 8) return maxLen * fontSize * 0.68;
-    if (fontFamily === 7) return maxLen * fontSize * 0.65;
-    return maxLen * fontSize * 0.62; // fontFamily 6 or fallback
+    // Emoji: exactly 1.0x fontSize (confirmed via browser measurement)
+    const mult =
+      fontFamily === 5
+        ? 0.85
+        : fontFamily === 8
+        ? 0.68
+        : fontFamily === 7
+        ? 0.65
+        : 0.62;
+
+    const lineWidths = lines.map((l) => {
+      let w = 0;
+      for (const ch of l) {
+        w += this._isEmoji(ch) ? 0 : fontSize * mult;
+      }
+      return w;
+    });
+
+    return Math.max(...lineWidths);
   }
 
   _textHeight(text, fontSize) {
-    const lines = text.split('\n');
+    const lines = text.split("\n");
+    // All lines use lineHeight 1.25 (Excalidraw applies lineHeight uniformly)
     return lines.length * fontSize * 1.25;
   }
 
@@ -90,45 +188,92 @@ class ExcalidrawPresentation {
 
   // ── Primitives ──────────────────────────────────────────────
 
-  rect(id, x, y, w, h, fill = "#f8f9fa", stroke = "#ced4da",
-       strokeWidth = 2, roundness = 3, opacity = 100) {
+  rect(
+    id,
+    x,
+    y,
+    w,
+    h,
+    fill = "#f8f9fa",
+    stroke = "#ced4da",
+    strokeWidth = 2,
+    roundness = 3,
+    opacity = 100
+  ) {
     const el = {
-      id, type: "rectangle",
-      x, y, width: w, height: h,
-      angle: 0, strokeColor: stroke,
-      backgroundColor: fill, fillStyle: "solid",
-      strokeWidth, strokeStyle: "solid",
-      roughness: 1, opacity,
-      groupIds: [], frameId: null,
+      id,
+      type: "rectangle",
+      x,
+      y,
+      width: w,
+      height: h,
+      angle: 0,
+      strokeColor: stroke,
+      backgroundColor: fill,
+      fillStyle: "solid",
+      strokeWidth,
+      strokeStyle: "solid",
+      roughness: 1,
+      opacity,
+      groupIds: [],
+      frameId: null,
       roundness: roundness ? { type: roundness } : null,
-      isDeleted: false, boundElements: [],
-      locked: false, seed: this._nextSeed(),
-      version: 1, versionNonce: 1,
+      isDeleted: false,
+      boundElements: [],
+      locked: false,
+      seed: this._nextSeed(),
+      version: 1,
+      versionNonce: 1,
     };
     this.elements.push(el);
     return el;
   }
 
-  text(id, x, y, text, size = 16, family = 6, color = "#1e1e1e",
-       align = "left") {
+  text(
+    id,
+    x,
+    y,
+    text,
+    size = 16,
+    family = 6,
+    color = "#1e1e1e",
+    align = "left"
+  ) {
     const w = this._textWidth(text, size, family);
     const h = this._textHeight(text, size);
     const el = {
-      id, type: "text",
-      x, y, width: w, height: h,
-      text, fontSize: size,
-      fontFamily: family, textAlign: align,
+      id,
+      type: "text",
+      x,
+      y,
+      width: w,
+      height: h,
+      text,
+      fontSize: size,
+      fontFamily: family,
+      textAlign: align,
       verticalAlign: "top",
-      strokeColor: color, backgroundColor: "transparent",
-      fillStyle: "solid", roughness: 1,
-      isDeleted: false, strokeWidth: 2,
-      strokeStyle: "solid", opacity: 100,
-      angle: 0, groupIds: [], frameId: null,
-      roundness: null, boundElements: [],
-      locked: false, containerId: null,
-      originalText: text, autoResize: true,
-      lineHeight: 1.25, seed: this._nextSeed(),
-      version: 1, versionNonce: 1,
+      strokeColor: color,
+      backgroundColor: "transparent",
+      fillStyle: "solid",
+      roughness: 1,
+      isDeleted: false,
+      strokeWidth: 2,
+      strokeStyle: "solid",
+      opacity: 100,
+      angle: 0,
+      groupIds: [],
+      frameId: null,
+      roundness: null,
+      boundElements: [],
+      locked: false,
+      containerId: null,
+      originalText: text,
+      autoResize: true,
+      lineHeight: 1.25,
+      seed: this._nextSeed(),
+      version: 1,
+      versionNonce: 1,
     };
     this.elements.push(el);
     return el;
@@ -136,16 +281,29 @@ class ExcalidrawPresentation {
 
   circle(id, x, y, size, fill, stroke) {
     const el = {
-      id, type: "ellipse",
-      x, y, width: size, height: size,
-      backgroundColor: fill, strokeColor: stroke,
-      strokeWidth: 2, fillStyle: "solid",
-      roughness: 1, isDeleted: false,
-      strokeStyle: "solid", opacity: 100,
-      angle: 0, groupIds: [], frameId: null,
-      roundness: null, boundElements: [],
-      locked: false, seed: this._nextSeed(),
-      version: 1, versionNonce: 1,
+      id,
+      type: "ellipse",
+      x,
+      y,
+      width: size,
+      height: size,
+      backgroundColor: fill,
+      strokeColor: stroke,
+      strokeWidth: 2,
+      fillStyle: "solid",
+      roughness: 1,
+      isDeleted: false,
+      strokeStyle: "solid",
+      opacity: 100,
+      angle: 0,
+      groupIds: [],
+      frameId: null,
+      roundness: null,
+      boundElements: [],
+      locked: false,
+      seed: this._nextSeed(),
+      version: 1,
+      versionNonce: 1,
     };
     this.elements.push(el);
     return el;
@@ -153,20 +311,36 @@ class ExcalidrawPresentation {
 
   line(id, x, y, length, color = "#ced4da", width = 2) {
     const el = {
-      id, type: "line",
-      x, y, width: length, height: 0,
-      strokeColor: color, strokeWidth: width,
-      fillStyle: "solid", roughness: 1,
-      isDeleted: false, strokeStyle: "solid",
-      opacity: 100, angle: 0,
-      groupIds: [], frameId: null,
+      id,
+      type: "line",
+      x,
+      y,
+      width: length,
+      height: 0,
+      strokeColor: color,
+      strokeWidth: width,
+      fillStyle: "solid",
+      roughness: 1,
+      isDeleted: false,
+      strokeStyle: "solid",
+      opacity: 100,
+      angle: 0,
+      groupIds: [],
+      frameId: null,
       roundness: { type: 2 },
-      boundElements: [], locked: false,
-      points: [[0, 0], [length, 0]],
-      startBinding: null, endBinding: null,
-      startArrowhead: null, endArrowhead: null,
+      boundElements: [],
+      locked: false,
+      points: [
+        [0, 0],
+        [length, 0],
+      ],
+      startBinding: null,
+      endBinding: null,
+      startArrowhead: null,
+      endArrowhead: null,
       seed: this._nextSeed(),
-      version: 1, versionNonce: 1,
+      version: 1,
+      versionNonce: 1,
       backgroundColor: "transparent",
     };
     this.elements.push(el);
@@ -175,16 +349,29 @@ class ExcalidrawPresentation {
 
   diamond(id, x, y, size = 12, fill = "#ffd43b", stroke = "#f59f00") {
     const el = {
-      id, type: "diamond",
-      x, y, width: size, height: size,
-      backgroundColor: fill, strokeColor: stroke,
-      strokeWidth: 2, fillStyle: "solid",
-      roughness: 1, isDeleted: false,
-      strokeStyle: "solid", opacity: 100,
-      angle: 0, groupIds: [], frameId: null,
-      roundness: null, boundElements: [],
-      locked: false, seed: this._nextSeed(),
-      version: 1, versionNonce: 1,
+      id,
+      type: "diamond",
+      x,
+      y,
+      width: size,
+      height: size,
+      backgroundColor: fill,
+      strokeColor: stroke,
+      strokeWidth: 2,
+      fillStyle: "solid",
+      roughness: 1,
+      isDeleted: false,
+      strokeStyle: "solid",
+      opacity: 100,
+      angle: 0,
+      groupIds: [],
+      frameId: null,
+      roundness: null,
+      boundElements: [],
+      locked: false,
+      seed: this._nextSeed(),
+      version: 1,
+      versionNonce: 1,
     };
     this.elements.push(el);
     return el;
@@ -193,20 +380,44 @@ class ExcalidrawPresentation {
   // ── Shadow ──────────────────────────────────────────────────
 
   shadow(id, x, y, w, h) {
-    return this.rect(`${id}-shadow`, x + 6, y + 6, w, h,
-                     "#adb5bd", "transparent", 2, 3, 40);
+    return this.rect(
+      `${id}-shadow`,
+      x + 6,
+      y + 6,
+      w,
+      h,
+      "#adb5bd",
+      "transparent",
+      2,
+      3,
+      40
+    );
   }
 
   // ── Compound Components ─────────────────────────────────────
 
   slideBackground(id, y, height) {
     this.slides.push({ y, h: height });
-    return this.rect(id, this.SLIDE_X, y, this.SLIDE_WIDTH, height,
-                     "#f8f9fa", "#ced4da");
+    return this.rect(
+      id,
+      this.SLIDE_X,
+      y,
+      this.SLIDE_WIDTH,
+      height,
+      "#f8f9fa",
+      "#ced4da"
+    );
   }
 
-  titleBanner(id, y, title, subtitle = null, color = "purple",
-              iconText = null, badges = null) {
+  titleBanner(
+    id,
+    y,
+    title,
+    subtitle = null,
+    color = "purple",
+    iconText = null,
+    badges = null
+  ) {
     const c = COLORS[color];
     const bannerH = 90;
     const x = this.CONTENT_X;
@@ -222,19 +433,39 @@ class ExcalidrawPresentation {
     this.circle(`${id}-icon`, circleX, circleY, circleSize, c.accent, c.stroke);
     if (iconText) {
       const iconFont = 26;
-      const [ix, iy] = this.centerTextInCircle(iconText, iconFont, circleX, circleY, circleSize);
-      this.text(`${id}-icon-text`, ix, iy, iconText,
-                iconFont, 6, "#ffffff", "center");
+      const [ix, iy] = this.centerTextInCircle(
+        iconText,
+        iconFont,
+        circleX,
+        circleY,
+        circleSize
+      );
+      this.text(
+        `${id}-icon-text`,
+        ix,
+        iy,
+        iconText,
+        iconFont,
+        6,
+        "#ffffff",
+        "center"
+      );
     }
 
     // Title (Excalifont hand-drawn font)
-    this.text(`${id}-title`, x + 95, y + 15, title,
-              36, 5, "#ffffff");
+    this.text(`${id}-title`, x + 95, y + 15, title, 36, 5, "#ffffff");
 
     // Subtitle
     if (subtitle) {
-      this.text(`${id}-subtitle`, x + 95, y + 55, subtitle,
-                20, 6, c.light || "#f3d9fa");
+      this.text(
+        `${id}-subtitle`,
+        x + 95,
+        y + 55,
+        subtitle,
+        20,
+        6,
+        c.light || "#f3d9fa"
+      );
     }
 
     // Badges on the right
@@ -245,13 +476,24 @@ class ExcalidrawPresentation {
         const [label, badgeColor] = badges[i];
         const bc = COLORS[badgeColor];
         const by = y + 10 + i * 40;
-        this.rect(`${id}-badge-${i}`, badgeX, by, badgeW, 35,
-                  bc.fill, bc.stroke);
-        const labelW = label.length * 16 * 0.62;
-        const lx = badgeX + (badgeW - labelW) / 2;
-        const ly = by + (35 - 16 * 1.25) / 2;
-        this.text(`${id}-badge-text-${i}`, lx, ly,
-                  label, 16, 6, "#ffffff");
+        this.rect(
+          `${id}-badge-${i}`,
+          badgeX,
+          by,
+          badgeW,
+          35,
+          bc.fill,
+          bc.stroke
+        );
+        const [lx, ly] = this.centerTextInRect(
+          label,
+          16,
+          badgeX,
+          by,
+          badgeW,
+          35
+        );
+        this.text(`${id}-badge-text-${i}`, lx, ly, label, 16, 6, "#ffffff");
       }
     }
 
@@ -260,10 +502,24 @@ class ExcalidrawPresentation {
 
   sectionHeader(id, y, title, color = "blue") {
     const c = COLORS[color];
-    this.rect(`${id}-bg`, this.CONTENT_X, y, this.CONTENT_WIDTH, 70,
-              c.accent, c.stroke);
-    this.text(`${id}-text`, this.CONTENT_X + 40, y + 14, title,
-              35, 7, "#ffffff");
+    this.rect(
+      `${id}-bg`,
+      this.CONTENT_X,
+      y,
+      this.CONTENT_WIDTH,
+      70,
+      c.accent,
+      c.stroke
+    );
+    this.text(
+      `${id}-text`,
+      this.CONTENT_X + 40,
+      y + 14,
+      title,
+      35,
+      7,
+      "#ffffff"
+    );
     return y + 70 + 20;
   }
 
@@ -276,20 +532,27 @@ class ExcalidrawPresentation {
     const numStr = String(number);
     const numFont = 23;
     const [nx, ny] = this.centerTextInCircle(numStr, numFont, x, y, circleSize);
-    this.text(`${id}-num`, nx, ny, numStr,
-              numFont, 6, "#ffffff");
-    this.text(`${id}-label`, x + 60, y + 10, label,
-              16, 6, "#495057");
+    this.text(`${id}-num`, nx, ny, numStr, numFont, 6, "#ffffff");
+    this.text(`${id}-label`, x + 60, y + 10, label, 16, 6, "#495057");
     if (duration) {
-      this.text(`${id}-dur`, 836, y + 15, duration,
-                12, 6, "#868e96");
+      this.text(`${id}-dur`, 836, y + 15, duration, 12, 6, "#868e96");
     }
 
     return y + 60;
   }
 
-  contentCard(id, x, y, w, h, title, body, color = "orange",
-              tag = null, withShadow = false) {
+  contentCard(
+    id,
+    x,
+    y,
+    w,
+    h,
+    title,
+    body,
+    color = "orange",
+    tag = null,
+    withShadow = false
+  ) {
     const c = COLORS[color];
 
     if (withShadow) {
@@ -304,25 +567,55 @@ class ExcalidrawPresentation {
 
     // Tag badge (centered text)
     if (tag) {
+      console.log("tag", tag);
       const tagFont = 14;
-      const tagTextW = tag.length * tagFont * 0.62;
+      const tagTextW = this._textWidth(tag, tagFont);
       const tagW = Math.max(tagTextW + 24, 80);
       const tagX = x + w - tagW - 15;
-      this.rect(`${id}-tag-bg`, tagX, y + 5, tagW, 27,
-                c.accent, c.stroke);
-      const textX = tagX + (tagW - tagTextW) / 2;
-      const textY = y + 5 + (27 - tagFont * 1.25) / 2;
-      this.text(`${id}-tag-text`, textX, textY, tag,
-                tagFont, 6, "#ffffff", "center");
+      this.rect(`${id}-tag-bg`, tagX, y + 5, tagW, 27, c.accent, c.stroke);
+      const [textX, textY] = this.centerTextInRect(
+        tag,
+        tagFont,
+        tagX,
+        y + 5,
+        tagW,
+        27
+      );
+      this.text(
+        `${id}-tag-text`,
+        textX,
+        textY,
+        tag,
+        tagFont,
+        6,
+        "#ffffff"
+      );
     }
 
     // Title
-    this.text(`${id}-title`, x + 20, y + 50, title,
-              21, 6, "#1e1e1e");
+    this.text(`${id}-title`, x + 20, y + 50, title, 21, 6, "#1e1e1e");
 
     // Body text
-    this.text(`${id}-body-text`, x + 20, y + 82, body,
-              16, 6, "#495057");
+    const bodyEl = this.text(
+      `${id}-body-text`,
+      x + 20,
+      y + 82,
+      body,
+      16,
+      6,
+      "#495057"
+    );
+
+    // Auto-grow card height if body text overflows
+    const minH = 82 + bodyEl.height + 20;
+    if (h < minH) {
+      const cardBody = this.elements.find((el) => el.id === `${id}-body`);
+      if (cardBody) cardBody.height = minH;
+      // Also grow shadow if present
+      const shadowEl = this.elements.find((el) => el.id === `${id}-shadow`);
+      if (shadowEl) shadowEl.height = minH;
+      h = minH;
+    }
 
     return y + h + 20;
   }
@@ -338,26 +631,60 @@ class ExcalidrawPresentation {
       const card = cards[i];
       const x = startX + i * (cardW + gap);
       const cardBottom = this.contentCard(
-        `${id}-card-${i}`, x, y, cardW, height,
-        card.title || "", card.body || "",
-        card.color || "orange", card.tag || null,
-        true);
+        `${id}-card-${i}`,
+        x,
+        y,
+        cardW,
+        height,
+        card.title || "",
+        card.body || "",
+        card.color || "orange",
+        card.tag || null,
+        true
+      );
       bottomY = Math.max(bottomY, cardBottom);
     }
     return bottomY;
   }
 
-  twoCards(id, y, leftTitle, leftBody, rightTitle, rightBody,
-           leftColor = "orange", rightColor = "purple",
-           leftTag = null, rightTag = null, height = 200) {
-    return this.nCards(id, y, [
-      { title: leftTitle, body: leftBody, color: leftColor, tag: leftTag },
-      { title: rightTitle, body: rightBody, color: rightColor, tag: rightTag },
-    ], height);
+  twoCards(
+    id,
+    y,
+    leftTitle,
+    leftBody,
+    rightTitle,
+    rightBody,
+    leftColor = "orange",
+    rightColor = "purple",
+    leftTag = null,
+    rightTag = null,
+    height = 200
+  ) {
+    return this.nCards(
+      id,
+      y,
+      [
+        { title: leftTitle, body: leftBody, color: leftColor, tag: leftTag },
+        {
+          title: rightTitle,
+          body: rightBody,
+          color: rightColor,
+          tag: rightTag,
+        },
+      ],
+      height
+    );
   }
 
-  comparison(id, y, negativeTitle, negativeItems,
-             positiveTitle, positiveItems, height = null) {
+  comparison(
+    id,
+    y,
+    negativeTitle,
+    negativeItems,
+    positiveTitle,
+    positiveItems,
+    height = null
+  ) {
     const itemsCount = Math.max(negativeItems.length, positiveItems.length);
     if (height === null) {
       height = 50 + itemsCount * 35 + 20;
@@ -365,30 +692,84 @@ class ExcalidrawPresentation {
 
     // Negative side
     this.shadow(`${id}-neg`, this.CARD_LEFT_X, y, this.CARD_LEFT_W, height);
-    this.rect(`${id}-neg-body`, this.CARD_LEFT_X, y,
-              this.CARD_LEFT_W, height, "#fff5f5", "#fa5252");
-    this.rect(`${id}-neg-header`, this.CARD_LEFT_X, y,
-              this.CARD_LEFT_W, 36, "#fa5252", "#e03131");
-    this.text(`${id}-neg-title`, this.CARD_LEFT_X + 15, y + 8,
-              negativeTitle, 15, 6, "#ffffff");
+    this.rect(
+      `${id}-neg-body`,
+      this.CARD_LEFT_X,
+      y,
+      this.CARD_LEFT_W,
+      height,
+      "#fff5f5",
+      "#fa5252"
+    );
+    this.rect(
+      `${id}-neg-header`,
+      this.CARD_LEFT_X,
+      y,
+      this.CARD_LEFT_W,
+      36,
+      "#fa5252",
+      "#e03131"
+    );
+    this.text(
+      `${id}-neg-title`,
+      this.CARD_LEFT_X + 15,
+      y + 8,
+      negativeTitle,
+      15,
+      6,
+      "#ffffff"
+    );
     for (let i = 0; i < negativeItems.length; i++) {
-      this.text(`${id}-neg-item-${i}`, this.CARD_LEFT_X + 20,
-                y + 50 + i * 35, `\u274C ${negativeItems[i]}`, 16, 6,
-                "#495057");
+      this.text(
+        `${id}-neg-item-${i}`,
+        this.CARD_LEFT_X + 20,
+        y + 50 + i * 35,
+        `\u274C ${negativeItems[i]}`,
+        16,
+        6,
+        "#495057"
+      );
     }
 
     // Positive side
     this.shadow(`${id}-pos`, this.CARD_RIGHT_X, y, this.CARD_RIGHT_W, height);
-    this.rect(`${id}-pos-body`, this.CARD_RIGHT_X, y,
-              this.CARD_RIGHT_W, height, "#ebfbee", "#40c057");
-    this.rect(`${id}-pos-header`, this.CARD_RIGHT_X, y,
-              this.CARD_RIGHT_W, 36, "#40c057", "#2f9e44");
-    this.text(`${id}-pos-title`, this.CARD_RIGHT_X + 15, y + 8,
-              positiveTitle, 15, 6, "#ffffff");
+    this.rect(
+      `${id}-pos-body`,
+      this.CARD_RIGHT_X,
+      y,
+      this.CARD_RIGHT_W,
+      height,
+      "#ebfbee",
+      "#40c057"
+    );
+    this.rect(
+      `${id}-pos-header`,
+      this.CARD_RIGHT_X,
+      y,
+      this.CARD_RIGHT_W,
+      36,
+      "#40c057",
+      "#2f9e44"
+    );
+    this.text(
+      `${id}-pos-title`,
+      this.CARD_RIGHT_X + 15,
+      y + 8,
+      positiveTitle,
+      15,
+      6,
+      "#ffffff"
+    );
     for (let i = 0; i < positiveItems.length; i++) {
-      this.text(`${id}-pos-item-${i}`, this.CARD_RIGHT_X + 20,
-                y + 50 + i * 35, `\u2705 ${positiveItems[i]}`, 16, 6,
-                "#495057");
+      this.text(
+        `${id}-pos-item-${i}`,
+        this.CARD_RIGHT_X + 20,
+        y + 50 + i * 35,
+        `\u2705 ${positiveItems[i]}`,
+        16,
+        6,
+        "#495057"
+      );
     }
 
     return y + height + 20;
@@ -399,26 +780,60 @@ class ExcalidrawPresentation {
     const textH = this._textHeight(text, 17);
     const boxH = Math.max(textH + 30, 60);
 
-    this.rect(`${id}-bg`, this.CONTENT_X, y, this.CONTENT_WIDTH, boxH,
-              c.bg, c.stroke);
+    this.rect(
+      `${id}-bg`,
+      this.CONTENT_X,
+      y,
+      this.CONTENT_WIDTH,
+      boxH,
+      c.bg,
+      c.stroke
+    );
     const emojiSize = 28;
-    this.text(`${id}-emoji`, this.CONTENT_X + 15, y + 12, emoji,
-              emojiSize, 6, "#1e1e1e");
-    this.text(`${id}-text`, this.CONTENT_X + 15 + emojiSize + 12, y + 15,
-              text, 17, 6, "#495057");
+    this.text(
+      `${id}-emoji`,
+      this.CONTENT_X + 15,
+      y + 12,
+      emoji,
+      emojiSize,
+      6,
+      "#1e1e1e"
+    );
+    this.text(
+      `${id}-text`,
+      this.CONTENT_X + 15 + emojiSize + 12,
+      y + 15,
+      text,
+      17,
+      6,
+      "#495057"
+    );
 
     return y + boxH + 20;
   }
 
-  bulletList(id, x, y, items, color = "#495057", fontSize = 16,
-             bulletColor = "blue") {
+  bulletList(
+    id,
+    x,
+    y,
+    items,
+    color = "#495057",
+    fontSize = 16,
+    bulletColor = "blue"
+  ) {
     const c = COLORS[bulletColor];
     let currentY = y;
     for (let i = 0; i < items.length; i++) {
-      this.circle(`${id}-bullet-${i}`, x, currentY + 4, 10,
-                  c.fill, c.stroke);
-      this.text(`${id}-item-${i}`, x + 20, currentY, items[i],
-                fontSize, 6, color);
+      this.circle(`${id}-bullet-${i}`, x, currentY + 4, 10, c.fill, c.stroke);
+      this.text(
+        `${id}-item-${i}`,
+        x + 20,
+        currentY,
+        items[i],
+        fontSize,
+        6,
+        color
+      );
       currentY += this._textHeight(items[i], fontSize) + 8;
     }
     return currentY + 10;
@@ -457,13 +872,15 @@ class ExcalidrawPresentation {
   }
 
   save(path) {
-    fs.writeFileSync(path, JSON.stringify(this.toJSON(), null, 2), 'utf-8');
+    fs.writeFileSync(path, JSON.stringify(this.toJSON(), null, 2), "utf-8");
     console.log(`Saved to ${path}`);
-    console.log(`   ${this.elements.length} elements, ${this.slides.length} slides`);
+    console.log(
+      `   ${this.elements.length} elements, ${this.slides.length} slides`
+    );
   }
 
   async push(url = "http://localhost:41520", clear = true) {
-    const base = url.replace(/\/+$/, '');
+    const base = url.replace(/\/+$/, "");
 
     // Clear existing elements
     if (clear) {
@@ -489,7 +906,9 @@ class ExcalidrawPresentation {
         process.exit(1);
       }
       const result = await resp.json();
-      console.log(`Pushed ${result.count || this.elements.length} elements to ${base}`);
+      console.log(
+        `Pushed ${result.count || this.elements.length} elements to ${base}`
+      );
       console.log(`   Open: ${base}`);
     } catch (e) {
       console.log(`ERROR: Failed to push elements: ${e.message}`);
@@ -513,26 +932,45 @@ if (require.main === module) {
     p.slideBackground("s1-bg", y, slide1H);
 
     let yPos = y + 30;
-    yPos = p.titleBanner("s1-header", yPos,
+    yPos = p.titleBanner(
+      "s1-header",
+      yPos,
       "DEMO \u041F\u0420\u0415\u0417\u0415\u041D\u0422\u0410\u0426\u0418\u042F",
       "\u041F\u0440\u0438\u043C\u0435\u0440 canvas-\u043F\u0440\u0435\u0437\u0435\u043D\u0442\u0430\u0446\u0438\u0438",
-      "purple", "\uD83C\uDFAF",
-      [["\u0414\u0415\u041C\u041E", "blue"], ["5 \u043C\u0438\u043D", "green"]]);
+      "purple",
+      "\uD83C\uDFAF",
+      [
+        ["\u0414\u0415\u041C\u041E", "blue"],
+        ["5 \u043C\u0438\u043D", "green"],
+      ]
+    );
 
-    yPos = p.sectionHeader("s1-section", yPos,
-      "\u0427\u0422\u041E \u0422\u042B \u0423\u0412\u0418\u0414\u0418\u0428\u042C \u0412 \u042D\u0422\u041E\u0419 \u0414\u0415\u041C\u041E", "blue");
+    yPos = p.sectionHeader(
+      "s1-section",
+      yPos,
+      "\u0427\u0422\u041E \u0422\u042B \u0423\u0412\u0418\u0414\u0418\u0428\u042C \u0412 \u042D\u0422\u041E\u0419 \u0414\u0415\u041C\u041E",
+      "blue"
+    );
 
-    yPos = p.twoCards("s1-cards", yPos,
+    yPos = p.twoCards(
+      "s1-cards",
+      yPos,
       "\uD83D\uDCE6 \u041A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u044B",
       "\u0413\u043E\u0442\u043E\u0432\u044B\u0435 \u0432\u0438\u0437\u0443\u0430\u043B\u044C\u043D\u044B\u0435 \u0431\u043B\u043E\u043A\u0438:\n\u2022 \u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 \u0438 \u0431\u0430\u043D\u043D\u0435\u0440\u044B\n\u2022 \u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043A\u043E\u043D\u0442\u0435\u043D\u0442\u0430\n\u2022 \u0421\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F\n\u2022 \u041F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438",
       "\uD83C\uDFA8 \u0421\u0442\u0438\u043B\u0438\u0437\u0430\u0446\u0438\u044F",
       "\u041F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0434\u0438\u0437\u0430\u0439\u043D:\n\u2022 9 \u0446\u0432\u0435\u0442\u043E\u0432\u044B\u0445 \u0442\u0435\u043C\n\u2022 \u0422\u0435\u043D\u0438 \u0438 \u0433\u043B\u0443\u0431\u0438\u043D\u0430\n\u2022 \u0422\u0438\u043F\u043E\u0433\u0440\u0430\u0444\u0438\u043A\u0430\n\u2022 \u0421\u043A\u0435\u0442\u0447-\u0441\u0442\u0438\u043B\u044C",
-      "orange", "purple",
-      "LEGO", "\u0414\u0418\u0417\u0410\u0419\u041D",
-      220);
+      "orange",
+      "purple",
+      "LEGO",
+      "\u0414\u0418\u0417\u0410\u0419\u041D",
+      220
+    );
 
-    yPos = p.tipBox("s1-tip", yPos,
-      "\u042D\u0442\u043E \u0432\u0441\u0451 \u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u0442\u0441\u044F Node.js-\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u043C \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438!");
+    yPos = p.tipBox(
+      "s1-tip",
+      yPos,
+      "\u042D\u0442\u043E \u0432\u0441\u0451 \u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u0442\u0441\u044F Node.js-\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u043C \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438!"
+    );
 
     slide1H = yPos - y + 30;
 
@@ -544,14 +982,26 @@ if (require.main === module) {
     p.slideBackground("s2-bg", y, 100);
 
     yPos = y + 30;
-    yPos = p.blockNumber("s2-block", yPos, 1,
-      "\u0421\u0420\u0410\u0412\u041D\u0415\u041D\u0418\u0415 \u041F\u041E\u0414\u0425\u041E\u0414\u041E\u0412", "3 \u043C\u0438\u043D", "blue");
+    yPos = p.blockNumber(
+      "s2-block",
+      yPos,
+      1,
+      "\u0421\u0420\u0410\u0412\u041D\u0415\u041D\u0418\u0415 \u041F\u041E\u0414\u0425\u041E\u0414\u041E\u0412",
+      "3 \u043C\u0438\u043D",
+      "blue"
+    );
 
     yPos += 20;
-    yPos = p.sectionHeader("s2-section", yPos,
-      "\uD83D\uDD27 \u0420\u0423\u0427\u041D\u041E\u0419 \u041A\u041E\u0414 vs \u0412\u0410\u0419\u0411\u041A\u041E\u0414\u0418\u041D\u0413", "green");
+    yPos = p.sectionHeader(
+      "s2-section",
+      yPos,
+      "\uD83D\uDD27 \u0420\u0423\u0427\u041D\u041E\u0419 \u041A\u041E\u0414 vs \u0412\u0410\u0419\u0411\u041A\u041E\u0414\u0418\u041D\u0413",
+      "green"
+    );
 
-    yPos = p.comparison("s2-compare", yPos,
+    yPos = p.comparison(
+      "s2-compare",
+      yPos,
       "\u0420\u0423\u0427\u041D\u041E\u0419 \u041A\u041E\u0414",
       [
         "\u0427\u0430\u0441\u044B \u043D\u0430 \u0431\u043E\u0439\u043B\u0435\u0440\u043F\u043B\u0435\u0439\u0442",
@@ -563,19 +1013,32 @@ if (require.main === module) {
         "\u0424\u043E\u043A\u0443\u0441 \u043D\u0430 \u043B\u043E\u0433\u0438\u043A\u0435",
         "AI \u043F\u043E\u043A\u0440\u044B\u0432\u0430\u0435\u0442 edge cases",
         "\u0410\u043A\u0442\u0443\u0430\u043B\u044C\u043D\u044B\u0435 best practices",
-      ]);
+      ]
+    );
 
-    yPos = p.tipBox("s2-tip", yPos,
-      "\u0412\u0430\u0439\u0431\u043A\u043E\u0434\u0438\u043D\u0433 \u2014 \u044D\u0442\u043E \u043D\u0435 \u0437\u0430\u043C\u0435\u043D\u0430 \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0441\u0442\u0430.\n\u042D\u0442\u043E \u0443\u0441\u0438\u043B\u0438\u0442\u0435\u043B\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0435\u0439.", "\uD83E\uDDE0");
+    yPos = p.tipBox(
+      "s2-tip",
+      yPos,
+      "\u0412\u0430\u0439\u0431\u043A\u043E\u0434\u0438\u043D\u0433 \u2014 \u044D\u0442\u043E \u043D\u0435 \u0437\u0430\u043C\u0435\u043D\u0430 \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0441\u0442\u0430.\n\u042D\u0442\u043E \u0443\u0441\u0438\u043B\u0438\u0442\u0435\u043B\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0435\u0439.",
+      "\uD83E\uDDE0"
+    );
 
     yPos = p.separatorLine("s2-sep", yPos, "#be4bdb");
 
     yPos += 10;
-    yPos = p.bulletList("s2-list", p.CONTENT_X + 60, yPos, [
-      "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 AI \u043A\u0430\u043A \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430, \u0430 \u043D\u0435 \u0437\u0430\u043C\u0435\u043D\u0443",
-      "\u041F\u043E\u043D\u0438\u043C\u0430\u0439 \u0447\u0442\u043E \u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u0442\u0441\u044F \u2014 \u043D\u0435 \u043A\u043E\u043F\u0438\u0440\u0443\u0439 \u0441\u043B\u0435\u043F\u043E",
-      "\u0421\u0442\u0440\u043E\u0439 \u0441\u0432\u043E\u044E \u0431\u0438\u0431\u043B\u0438\u043E\u0442\u0435\u043A\u0443 \u043F\u0440\u043E\u043C\u043F\u0442\u043E\u0432 \u0438 \u0441\u043A\u0438\u043B\u043E\u0432",
-    ], "#495057", 16, "purple");
+    yPos = p.bulletList(
+      "s2-list",
+      p.CONTENT_X + 60,
+      yPos,
+      [
+        "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 AI \u043A\u0430\u043A \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430, \u0430 \u043D\u0435 \u0437\u0430\u043C\u0435\u043D\u0443",
+        "\u041F\u043E\u043D\u0438\u043C\u0430\u0439 \u0447\u0442\u043E \u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u0442\u0441\u044F \u2014 \u043D\u0435 \u043A\u043E\u043F\u0438\u0440\u0443\u0439 \u0441\u043B\u0435\u043F\u043E",
+        "\u0421\u0442\u0440\u043E\u0439 \u0441\u0432\u043E\u044E \u0431\u0438\u0431\u043B\u0438\u043E\u0442\u0435\u043A\u0443 \u043F\u0440\u043E\u043C\u043F\u0442\u043E\u0432 \u0438 \u0441\u043A\u0438\u043B\u043E\u0432",
+      ],
+      "#495057",
+      16,
+      "purple"
+    );
 
     p.progressDots("s2-dots", p.CONTENT_X + 350, yPos, 5, 2);
     yPos += 30;
@@ -591,14 +1054,23 @@ if (require.main === module) {
     p.slideBackground("s3-bg", y, slide3H);
 
     yPos = y + 30;
-    yPos = p.titleBanner("s3-header", yPos,
+    yPos = p.titleBanner(
+      "s3-header",
+      yPos,
       "\u0421\u041F\u0410\u0421\u0418\u0411\u041E!",
       "\u041F\u043E\u0434\u043F\u0438\u0441\u044B\u0432\u0430\u0439\u0441\u044F \u043D\u0430 \u043A\u0430\u043D\u0430\u043B",
-      "green", "\uD83D\uDD25",
-      [["\u041A\u041E\u041D\u0415\u0426", "red"]]);
+      "green",
+      "\uD83D\uDD25",
+      [["\u041A\u041E\u041D\u0415\u0426", "red"]]
+    );
 
-    yPos = p.tipBox("s3-cta", yPos,
-      "\u0421\u0442\u0430\u0432\u044C \u043B\u0430\u0439\u043A, \u043F\u043E\u0434\u043F\u0438\u0441\u044B\u0432\u0430\u0439\u0441\u044F, \u0436\u043C\u0438 \u043A\u043E\u043B\u043E\u043A\u043E\u043B\u044C\u0447\u0438\u043A! \uD83D\uDD14", "\uD83D\uDE80", "cyan");
+    yPos = p.tipBox(
+      "s3-cta",
+      yPos,
+      "\u0421\u0442\u0430\u0432\u044C \u043B\u0430\u0439\u043A, \u043F\u043E\u0434\u043F\u0438\u0441\u044B\u0432\u0430\u0439\u0441\u044F, \u0436\u043C\u0438 \u043A\u043E\u043B\u043E\u043A\u043E\u043B\u044C\u0447\u0438\u043A! \uD83D\uDD14",
+      "\uD83D\uDE80",
+      "cyan"
+    );
 
     slide3H = yPos - slide3Start + 30;
 

@@ -1,7 +1,7 @@
 ---
 name: excalidraw-presentation
 description: "Create beautiful vertical-scroll canvas presentations on a live Excalidraw canvas. Use when user requests: create presentation, make slides, canvas presentation, excalidraw presentation, visual slides."
-allowed-tools: Bash(curl *), Bash(node *), Bash(npm *)
+allowed-tools: Bash(node *)
 ---
 
 # Excalidraw Canvas Presentation Skill
@@ -21,56 +21,27 @@ Before creating a presentation, you MUST ensure the Excalidecks server is runnin
 
 ### Step 0: Ensure server is running (with version check)
 
+Run the ensure-server script. It checks health, builds if needed, starts the server, and handles version upgrades — all in one `node` call:
+
 ```bash
-PLUGIN_DIR=$(dirname "$(find ~/.claude -name excalidraw_presentation.cjs -path '*/excalidraw-presentation/*' 2>/dev/null | head -1)")
-PROJECT_DIR=$(cd "$PLUGIN_DIR/../../.." 2>/dev/null && pwd)
-EXPECTED_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$PROJECT_DIR/.claude-plugin/plugin.json','utf8')).version)" 2>/dev/null || echo "unknown")
-
-# Start server if not running
-if ! curl -s http://localhost:41520/health >/dev/null 2>&1; then
-  if [ ! -f "$PROJECT_DIR/dist/index.js" ]; then
-    echo "Building server for the first time..."
-    (cd "$PROJECT_DIR" && npm ci && npm run build)
-  fi
-  nohup node "$PROJECT_DIR/dist/index.js" --canvas-only > /dev/null 2>&1 &
-  for i in $(seq 1 15); do
-    curl -s http://localhost:41520/health >/dev/null 2>&1 && break
-    sleep 1
-  done
-fi
-
-# Version check
-RUNNING_VERSION=$(curl -s http://localhost:41520/health | node -e "process.stdin.on('data',d=>{try{console.log(JSON.parse(d).version||'unknown')}catch(e){console.log('unknown')}})")
-if [ "$RUNNING_VERSION" != "$EXPECTED_VERSION" ] && [ "$EXPECTED_VERSION" != "unknown" ]; then
-  echo "Upgrading server: v$RUNNING_VERSION -> v$EXPECTED_VERSION"
-  lsof -ti:41520 | xargs kill 2>/dev/null
-  sleep 2
-  (cd "$PROJECT_DIR" && npm ci && npm run build)
-  nohup node "$PROJECT_DIR/dist/index.js" --canvas-only > /dev/null 2>&1 &
-  for i in $(seq 1 15); do
-    curl -s http://localhost:41520/health >/dev/null 2>&1 && echo "Server upgraded to v$EXPECTED_VERSION" && break
-    sleep 1
-  done
-else
-  echo "Server running (v$RUNNING_VERSION)"
-fi
+node "$(find ~/.claude -name ensure-server.cjs -path '*/excalidraw-presentation/*' 2>/dev/null | head -1)"
 ```
 
 ## How It Works
 
 1. Start the server (Step 0)
-2. Generate presentation using Node.js helper via inline heredoc
-3. Call `await p.push()` to send all elements to the live server
+2. Write presentation code to `~/.excalidecks/presentation.js` using the **Write** tool
+3. Run `node ~/.excalidecks/presentation.js` to push elements to the live server
 4. User sees the presentation at http://localhost:41520
 
 ## Implementation
 
-### CRITICAL: Do NOT create files
+### Two-step generation: Write + Run
 
-Do NOT create `.js` scripts or `.excalidraw` files. Run Node.js inline via Bash heredoc and push directly to the live server:
+**Step A**: Use the **Write** tool to create `~/.excalidecks/presentation.js`:
 
-```bash
-node << 'EOF'
+```js
+// ~/.excalidecks/presentation.js
 const { ExcalidrawPresentation } = require(
   require('child_process').execSync(
     "find ~/.claude -name excalidraw_presentation.cjs -path '*/excalidraw-presentation/*' 2>/dev/null | head -1"
@@ -83,8 +54,15 @@ let y = 0;
 // ... build presentation ...
 
 p.push();  // sends to http://localhost:41520 and clears previous elements
-EOF
 ```
+
+**Step B**: Run it:
+
+```bash
+node ~/.excalidecks/presentation.js
+```
+
+This approach keeps bash commands simple (`node <path>`) so they match `Bash(node *)` and require no user confirmation.
 
 ## CRITICAL: Element Generation Rules
 
@@ -269,8 +247,9 @@ Use `p.centerTextInRect()` and `p.centerTextInCircle()`, never magic numbers.
 
 ## Usage Example
 
-```bash
-node << 'EOF'
+Write this to `~/.excalidecks/presentation.js` using the **Write** tool:
+
+```js
 const { ExcalidrawPresentation } = require(
   require('child_process').execSync(
     "find ~/.claude -name excalidraw_presentation.cjs -path '*/excalidraw-presentation/*' 2>/dev/null | head -1"
@@ -305,7 +284,12 @@ for (const el of p.elements) {
 }
 
 p.push();  // live preview at http://localhost:41520
-EOF
+```
+
+Then run:
+
+```bash
+node ~/.excalidecks/presentation.js
 ```
 
 ## Key Design Principles

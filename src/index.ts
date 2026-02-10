@@ -1,23 +1,23 @@
 // Disable colors to prevent ANSI codes from breaking JSON parsing
-process.env.NODE_DISABLE_COLORS = '1';
-process.env.NO_COLOR = '1';
+process.env.NODE_DISABLE_COLORS = "1";
+process.env.NO_COLOR = "1";
 
-import { createServer } from 'http';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import logger from './utils/logger.js';
-import { createExpressApp } from './canvas/express-app.js';
-import { initWebSocket, closeWebSocket } from './canvas/websocket.js';
-import { registerTools } from './mcp/tools.js';
-import { SERVER_VERSION } from './version.js';
+import { createServer } from "http";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import logger from "./utils/logger.js";
+import { createExpressApp } from "./canvas/express-app.js";
+import { initWebSocket, closeWebSocket } from "./canvas/websocket.js";
+import { registerTools } from "./mcp/tools.js";
+import { SERVER_VERSION } from "./version.js";
 
 // Safety: redirect console.log to logger so nothing leaks to stdout
-console.log = (...args: any[]) => logger.info(args.join(' '));
+console.log = (...args: any[]) => logger.info(args.join(" "));
 
-const PORT = parseInt(process.env.PORT || '41520', 10);
-const HOST = process.env.HOST || 'localhost';
-const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-const CANVAS_ONLY = process.argv.includes('--canvas-only');
+const PORT = parseInt(process.env.PORT || "41520", 10);
+const HOST = process.env.HOST || "localhost";
+const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+const CANVAS_ONLY = process.argv.includes("--canvas-only");
 
 // --- Inactivity timer ---
 let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
@@ -25,7 +25,7 @@ let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 function resetInactivityTimer(): void {
   if (inactivityTimer) clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => {
-    logger.info('No activity for 5 minutes, shutting down');
+    logger.info("No activity for 5 minutes, shutting down");
     shutdown();
   }, INACTIVITY_TIMEOUT_MS);
 }
@@ -43,9 +43,10 @@ let mcpServer: Server | null = null;
 async function startMcp(): Promise<void> {
   mcpServer = new Server(
     {
-      name: 'excalidecks',
+      name: "excalidecks",
       version: SERVER_VERSION,
-      description: 'Excalidraw canvas presentations and live MCP drawing server',
+      description:
+        "Excalidraw canvas presentations and live MCP drawing server",
     },
     {
       capabilities: {
@@ -58,12 +59,12 @@ async function startMcp(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await mcpServer.connect(transport);
-  logger.info('MCP server running on stdio');
+  logger.info("MCP server running on stdio");
 }
 
 // --- Graceful shutdown ---
 async function shutdown(): Promise<void> {
-  logger.info('Shutting down...');
+  logger.info("Shutting down...");
   if (inactivityTimer) clearTimeout(inactivityTimer);
 
   await closeWebSocket();
@@ -83,29 +84,33 @@ httpServer.listen(PORT, HOST, async () => {
     try {
       await startMcp();
     } catch (error) {
-      logger.error('Failed to start MCP server:', error);
-      process.stderr.write(`Failed to start MCP server: ${(error as Error).message}\n`);
+      logger.error("Failed to start MCP server:", error);
+      process.stderr.write(
+        `Failed to start MCP server: ${(error as Error).message}\n`
+      );
       process.exit(1);
     }
   } else {
-    logger.info('Running in canvas-only mode (no MCP)');
+    logger.info("Running in canvas-only mode (no MCP)");
   }
 
   resetInactivityTimer();
 });
 
 // --- Error handlers ---
-process.on('uncaughtException', (error: Error) => {
-  logger.error('Uncaught exception:', error);
-  process.stderr.write(`UNCAUGHT EXCEPTION: ${error.message}\n${error.stack}\n`);
+process.on("uncaughtException", (error: Error) => {
+  logger.error("Uncaught exception:", error);
+  process.stderr.write(
+    `UNCAUGHT EXCEPTION: ${error.message}\n${error.stack}\n`
+  );
   setTimeout(() => process.exit(1), 1000);
 });
 
-process.on('unhandledRejection', (reason: any) => {
-  logger.error('Unhandled promise rejection:', reason);
+process.on("unhandledRejection", (reason: any) => {
+  logger.error("Unhandled promise rejection:", reason);
   process.stderr.write(`UNHANDLED REJECTION: ${reason}\n`);
   setTimeout(() => process.exit(1), 1000);
 });
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
