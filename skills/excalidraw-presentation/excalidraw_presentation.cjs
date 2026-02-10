@@ -74,6 +74,13 @@ const COLORS = {
   },
 };
 
+// Measured digit widths for Nunito (fontFamily 6) as fraction of fontSize
+// via canvas.measureText — digits are narrower than avg Latin char (0.62)
+const DIGIT_WIDTHS_NUNITO = {
+  '0': 0.57, '1': 0.38, '2': 0.57, '3': 0.57, '4': 0.59,
+  '5': 0.57, '6': 0.57, '7': 0.55, '8': 0.57, '9': 0.57,
+};
+
 // ─── Base element factory ───────────────────────────────────────
 class ExcalidrawPresentation {
   static SLIDE_WIDTH = 977;
@@ -170,8 +177,14 @@ class ExcalidrawPresentation {
     const lineWidths = lines.map((l) => {
       let w = 0;
       for (const ch of l) {
+        // DO NOT add emoji width here — Excalidraw measures emojis separately
+        // and adds their width on top. Adding it here would double-count.
         if (this._isEmoji(ch)) continue;
-        w += fontSize * (this._isCyrillic(ch) ? cyrMult : mult);
+        if (fontFamily === 6 && DIGIT_WIDTHS_NUNITO[ch] !== undefined) {
+          w += fontSize * DIGIT_WIDTHS_NUNITO[ch];
+        } else {
+          w += fontSize * (this._isCyrillic(ch) ? cyrMult : mult);
+        }
       }
       return w;
     });
@@ -217,10 +230,16 @@ class ExcalidrawPresentation {
     return [rectX + (rectW - tw) / 2, rectY + (rectH - th) / 2];
   }
 
-  centerTextInCircle(text, fontSize, circleX, circleY, diameter, family = 6) {
-    const tw = this._textWidth(text, fontSize, family);
+  centerTextInCircle(id, text, fontSize, circleX, circleY, diameter, family = 6, color = "#ffffff") {
+    // Full visual width including emojis (_textWidth skips them)
+    let tw = this._textWidth(text, fontSize, family);
+    for (const ch of text) {
+      if (this._isEmoji(ch)) tw += fontSize * 1.0;
+    }
     const th = this._textHeight(text, fontSize);
-    return [circleX + (diameter - tw) / 2, circleY + (diameter - th) / 2];
+    const tx = circleX + (diameter - tw) / 2;
+    const ty = circleY + (diameter - th) / 2;
+    return this.text(id, tx, ty, text, fontSize, family, color);
   }
 
   // ── Primitives ──────────────────────────────────────────────
@@ -470,23 +489,7 @@ class ExcalidrawPresentation {
     this.circle(`${id}-icon`, circleX, circleY, circleSize, c.accent, c.stroke);
     if (iconText) {
       const iconFont = 26;
-      const [ix, iy] = this.centerTextInCircle(
-        iconText,
-        iconFont,
-        circleX,
-        circleY,
-        circleSize
-      );
-      this.text(
-        `${id}-icon-text`,
-        ix,
-        iy,
-        iconText,
-        iconFont,
-        6,
-        "#ffffff",
-        "center"
-      );
+      this.centerTextInCircle(`${id}-icon-text`, iconText, iconFont, circleX, circleY, circleSize);
     }
 
     // Title (Excalifont hand-drawn font, wrapped)
@@ -584,8 +587,7 @@ class ExcalidrawPresentation {
     this.circle(`${id}-circle`, x, y, circleSize, c.fill, c.stroke);
     const numStr = String(number);
     const numFont = 23;
-    const [nx, ny] = this.centerTextInCircle(numStr, numFont, x, y, circleSize);
-    this.text(`${id}-num`, nx, ny, numStr, numFont, 6, "#ffffff");
+    this.centerTextInCircle(`${id}-num`, numStr, numFont, x, y, circleSize);
     this.text(`${id}-label`, x + 60, y + 10, label, 16, 6, "#495057");
     if (duration) {
       this.text(`${id}-dur`, 836, y + 15, duration, 12, 6, "#868e96");

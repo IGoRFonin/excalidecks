@@ -302,7 +302,7 @@ const { ExcalidrawPresentation } = require("./excalidraw_presentation.cjs");
   const slide6H = yPos - slide6Start + 30;
 
   // ═══════════════════════════════════════════════════════════
-  // SLIDE 7: Closing
+  // SLIDE 7: Steps — blockNumber + contentCard (digit centering)
   // ═══════════════════════════════════════════════════════════
   y = yPos + p.GAP_BETWEEN_SLIDES;
   const slide7Start = y;
@@ -312,6 +312,120 @@ const { ExcalidrawPresentation } = require("./excalidraw_presentation.cjs");
   yPos = p.titleBanner(
     "s7-header",
     yPos,
+    "ПЛАН ЗАПУСКА",
+    "От идеи до продакшена за 3 шага",
+    "green",
+    "1",
+    [["ПЛАН", "blue"]]
+  );
+
+  yPos = p.blockNumber("s7-b1", yPos, 1, "Исследование", "1 нед", "green");
+  yPos = p.contentCard(
+    "s7-c1",
+    p.CONTENT_X,
+    yPos,
+    p.CONTENT_WIDTH,
+    100,
+    "Анализ рынка и конкурентов",
+    "Изучение целевой аудитории.\nПроведение глубинных интервью.\nФормирование гипотез и метрик успеха.",
+    "green",
+    "СТАРТ",
+    true
+  );
+
+  yPos = p.blockNumber("s7-b2", yPos, 2, "Прототип", "2 нед", "orange");
+  yPos = p.contentCard(
+    "s7-c2",
+    p.CONTENT_X,
+    yPos,
+    p.CONTENT_WIDTH,
+    100,
+    "MVP и тестирование",
+    "Минимальный продукт с ключевым сценарием.\nA/B тесты и сбор обратной связи.\nИтерации по результатам.",
+    "orange",
+    "В РАБОТЕ",
+    true
+  );
+
+  yPos = p.blockNumber("s7-b3", yPos, 3, "Запуск", "1 нед", "purple");
+  yPos = p.contentCard(
+    "s7-c3",
+    p.CONTENT_X,
+    yPos,
+    p.CONTENT_WIDTH,
+    100,
+    "Продакшен и масштабирование",
+    "Деплой, мониторинг, алерты.\nОнбординг первых пользователей.\nАналитика и план развития.",
+    "purple",
+    "ФИНАЛ",
+    true
+  );
+
+  const slide7H = yPos - slide7Start + 30;
+
+  // ═══════════════════════════════════════════════════════════
+  // SLIDE 8: Skills — sectionHeader + twoCards
+  // ═══════════════════════════════════════════════════════════
+  y = yPos + p.GAP_BETWEEN_SLIDES;
+  const slide8Start = y;
+  p.slideBackground("s8-bg", y, 100);
+
+  yPos = y + 30;
+  yPos = p.titleBanner(
+    "s8-header",
+    yPos,
+    "СТЕК ТЕХНОЛОГИЙ",
+    "Инструменты и навыки команды",
+    "purple",
+    "2",
+    [["СТЕК", "violet"]]
+  );
+
+  yPos = p.sectionHeader("s8-sec1", yPos, "РАЗРАБОТКА", "green");
+
+  yPos = p.twoCards(
+    "s8-dev",
+    yPos,
+    "Фронтенд",
+    "TypeScript / React\nNext.js, Vite\nTailwind CSS\nТестирование: Vitest, Playwright",
+    "Бэкенд",
+    "Node.js / Python\nPostgreSQL, Redis\nREST API, WebSocket\nDocker, CI/CD",
+    "blue",
+    "cyan",
+    "FRONTEND",
+    "BACKEND",
+    220
+  );
+
+  yPos = p.sectionHeader("s8-sec2", yPos, "УПРАВЛЕНИЕ И ПРОЦЕССЫ", "purple");
+
+  yPos = p.twoCards(
+    "s8-mgmt",
+    yPos,
+    "Команда",
+    "Найм и онбординг\n1-on-1 и ревью\nМенторинг\nПостроение процессов",
+    "Продукт",
+    "Дорожная карта\nAgile / Kanban\nМетрики и аналитика\nВзаимодействие с бизнесом",
+    "violet",
+    "orange",
+    "PEOPLE",
+    "PRODUCT",
+    220
+  );
+
+  const slide8H = yPos - slide8Start + 30;
+
+  // ═══════════════════════════════════════════════════════════
+  // SLIDE 9: Closing
+  // ═══════════════════════════════════════════════════════════
+  y = yPos + p.GAP_BETWEEN_SLIDES;
+  const slide9Start = y;
+  p.slideBackground("s9-bg", y, 100);
+
+  yPos = y + 30;
+  yPos = p.titleBanner(
+    "s9-header",
+    yPos,
     "СПАСИБО!",
     "Подписывайся на канал",
     "green",
@@ -320,14 +434,14 @@ const { ExcalidrawPresentation } = require("./excalidraw_presentation.cjs");
   );
 
   yPos = p.tipBox(
-    "s7-cta",
+    "s9-cta",
     yPos,
     "Ставь лайк, подписывайся, жми колокольчик! 🔔",
     "🚀",
     "cyan"
   );
 
-  const slide7H = yPos - slide7Start + 30;
+  const slide9H = yPos - slide9Start + 30;
 
   // ── Fix slide background heights ────────────────────────────
   const slideHeights = {
@@ -338,6 +452,8 @@ const { ExcalidrawPresentation } = require("./excalidraw_presentation.cjs");
     "s5-bg": slide5H,
     "s6-bg": slide6H,
     "s7-bg": slide7H,
+    "s8-bg": slide8H,
+    "s9-bg": slide9H,
   };
   for (const el of p.elements) {
     if (slideHeights[el.id] !== undefined) {

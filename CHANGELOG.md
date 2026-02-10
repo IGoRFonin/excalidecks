@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.3] - 2026-02-10
+
+### Fixed
+- Digits and emojis in circles (`blockNumber`, `titleBanner` icons) now properly centered — reverted `centerTextInCircle()` to manual coordinate math with emoji-aware width calculation (`fontSize * 1.0` per emoji character), since container binding doesn't work via REST API
+
 ## [1.1.2] - 2026-02-10
 
 ### Added
